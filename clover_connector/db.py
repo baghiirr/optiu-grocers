@@ -171,6 +171,32 @@ CREATE TABLE IF NOT EXISTS sync_state (
     last_row_count INTEGER,
     last_error TEXT
 );
+
+-- Opti (OptiGrocer) decision exchange — shares this db with the Clover sync
+-- tables above so target_id values can reference Clover item ids directly.
+CREATE TABLE IF NOT EXISTS opti_decisions (
+    decision_id TEXT PRIMARY KEY,
+    run_id TEXT,
+    site_id TEXT,
+    decision_type TEXT,
+    target_id TEXT,
+    recommended_value TEXT NOT NULL,
+    confidence REAL,
+    created_at TEXT,
+    why_summary TEXT,
+    raw_json TEXT NOT NULL,
+    fetched_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_opti_decisions_site ON opti_decisions(site_id);
+CREATE INDEX IF NOT EXISTS idx_opti_decisions_type ON opti_decisions(decision_type);
+
+CREATE TABLE IF NOT EXISTS opti_decision_status (
+    decision_id TEXT PRIMARY KEY REFERENCES opti_decisions(decision_id),
+    status TEXT NOT NULL DEFAULT 'pending',
+    reviewed_by TEXT,
+    reviewed_at INTEGER,
+    notes TEXT
+);
 """
 
 

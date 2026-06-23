@@ -5,6 +5,7 @@ requires-python = ">=3.11"
 dependencies = [
     "requests>=2.31",
     "python-dotenv>=1.0",
+    "openpyxl>=3.1",
 ]
 
 [project.optional-dependencies]
@@ -16,10 +17,11 @@ dev = [
 
 [project.scripts]
 clover-connector = "clover_connector.cli:main"
+opti-connector = "opti_connector.cli:main"
 
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["clover_connector*"]
+include = ["clover_connector*", "opti_connector*"]
