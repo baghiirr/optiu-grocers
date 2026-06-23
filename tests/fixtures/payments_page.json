@@ -1,0 +1,16 @@
+{
+  "elements": [
+    {
+      "id": "PAY1",
+      "amount": 1299,
+      "tipAmount": 0,
+      "taxAmount": 0,
+      "result": "SUCCESS",
+      "createdTime": 1718040000500,
+      "modifiedTime": 1718040000500,
+      "tender": { "id": "TEN1" },
+      "order": { "id": "ORD1" }
+    }
+  ],
+  "href": "https://api.clover.com/v3/merchants/$MID/payments?offset=0&limit=1000"
+}

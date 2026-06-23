@@ -1,0 +1,16 @@
+{
+  "elements": [
+    {
+      "id": "0X1Y2Z",
+      "name": "Organic Whole Milk 1gal",
+      "price": 499,
+      "priceType": "FIXED",
+      "cost": 312,
+      "sku": "MILK-WH-1G",
+      "categories": { "elements": [ { "id": "CAT1", "name": "Dairy" } ] },
+      "itemStock": { "quantity": 24 },
+      "modifiedTime": 1718050000000
+    }
+  ],
+  "href": "https://api.clover.com/v3/merchants/$MID/items?offset=0&limit=1000"
+}

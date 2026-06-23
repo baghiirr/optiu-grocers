@@ -1,0 +1,8 @@
+{
+  "elements": [
+    { "id": "I1", "name": "Item 1", "price": 100, "modifiedTime": 1718050000001 },
+    { "id": "I2", "name": "Item 2", "price": 200, "modifiedTime": 1718050000002 },
+    { "id": "I3", "name": "Item 3", "price": 300, "modifiedTime": 1718050000003 }
+  ],
+  "href": "https://api.clover.com/v3/merchants/$MID/items?offset=0&limit=1000"
+}

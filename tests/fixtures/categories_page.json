@@ -1,0 +1,7 @@
+{
+  "elements": [
+    { "id": "CAT1", "name": "Dairy" },
+    { "id": "CAT2", "name": "Produce" }
+  ],
+  "href": "https://api.clover.com/v3/merchants/$MID/categories?offset=0&limit=1000"
+}

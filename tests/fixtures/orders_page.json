@@ -1,0 +1,24 @@
+{
+  "elements": [
+    {
+      "id": "ORD1",
+      "state": "open",
+      "total": 1299,
+      "createdTime": 1718040000000,
+      "modifiedTime": 1718050000010,
+      "employee": { "id": "EMP1" },
+      "device": { "id": "DEV1" },
+      "lineItems": {
+        "elements": [
+          { "id": "LI1", "name": "Organic Whole Milk 1gal", "price": 499, "unitQty": 1000, "item": { "id": "0X1Y2Z" } }
+        ]
+      },
+      "payments": {
+        "elements": [
+          { "id": "PAY1", "amount": 1299, "tipAmount": 0, "taxAmount": 0, "result": "SUCCESS", "createdTime": 1718040000500, "tender": { "id": "TEN1" } }
+        ]
+      }
+    }
+  ],
+  "href": "https://api.clover.com/v3/merchants/$MID/orders?offset=0&limit=1000"
+}

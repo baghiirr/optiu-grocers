@@ -1,0 +1,3 @@
+{
+  "href": "https://api.clover.com/v3/merchants/$MID/items?offset=0&limit=1000"
+}
