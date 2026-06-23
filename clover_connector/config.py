@@ -25,6 +25,7 @@ class CloverConfig:
     region: str = DEFAULT_REGION
     db_path: str = DEFAULT_DB_PATH
     lookback_months: int = DEFAULT_LOOKBACK_MONTHS
+    base_url_override: str | None = None
 
     @property
     def is_configured(self) -> bool:
@@ -55,6 +56,7 @@ def load_config(env: Mapping[str, str] | None = None) -> CloverConfig:
     db_path = _get(merged, "CLOVER_DB_PATH") or DEFAULT_DB_PATH
     lookback_raw = _get(merged, "CLOVER_LOOKBACK_MONTHS")
     lookback_months = int(lookback_raw) if lookback_raw else DEFAULT_LOOKBACK_MONTHS
+    base_url_override = _get(merged, "CLOVER_BASE_URL")
 
     return CloverConfig(
         token=token,
@@ -62,10 +64,15 @@ def load_config(env: Mapping[str, str] | None = None) -> CloverConfig:
         region=region,
         db_path=db_path,
         lookback_months=lookback_months,
+        base_url_override=base_url_override,
     )
 
 
 def base_url_for(config: CloverConfig) -> str:
+    """Returns the API base URL. `CLOVER_BASE_URL` (e.g. http://localhost:8765
+    for the local fake server) always wins over region lookup."""
+    if config.base_url_override:
+        return config.base_url_override
     try:
         return REGION_BASE_URLS[config.region]
     except KeyError:
