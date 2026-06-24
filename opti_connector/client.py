@@ -120,6 +120,26 @@ class OptiClient:
             )
         return response.json()
 
+    def push_direct(self, path: str | os.PathLike, api_key: str, mode: UploadMode = "incremental") -> dict:
+        with open(path, "rb") as fh:
+            response = self.session.post(
+                self._url("/api/integrations/ingest"),
+                headers={"X-API-Key": api_key},
+                params={"mode": mode},
+                files={"file": fh},
+                timeout=self.timeout,
+            )
+        if response.status_code not in (200, 204):
+            raise OptiAPIError(
+                f"Direct push failed ({response.status_code})",
+                status_code=response.status_code,
+                body=response.text,
+            )
+        try:
+            return response.json()
+        except ValueError:
+            return {}
+
     def poll_job(self, job_id: str, interval: float = 5.0, max_wait: float = 600.0) -> dict:
         waited = 0.0
         while True:

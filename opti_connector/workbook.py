@@ -23,6 +23,8 @@ SHEET_COLUMNS: dict[str, list[str]] = {
     "INP_SALES_HISTORY": ["product_id", "store_id", "sale_date", "units_sold", "revenue", "avg_price", "on_markdown"],
     "INP_SHRINK_HISTORY": ["shrink_id", "product_id", "store_id", "shrink_date", "units_lost", "cost_lost", "reason"],
     "INP_POLICY": ["policy_key", "policy_value", "scope", "department", "description"],
+    "INP_DEMAND_FORECAST": ["product_id", "store_id", "forecast_date", "expected_units", "units_p10", "units_p90", "confidence"],
+    "INP_ELASTICITY": ["product_id", "elasticity", "quality", "confidence"],
 }
 
 SHEET_DESCRIPTIONS: dict[str, dict[str, str]] = {
@@ -108,6 +110,21 @@ SHEET_DESCRIPTIONS: dict[str, dict[str, str]] = {
         "scope": "global | department | store.",
         "department": "Only when scope=department.",
         "description": "Human rationale.",
+    },
+    "INP_DEMAND_FORECAST": {
+        "product_id": "FK to INP_PRODUCT.",
+        "store_id": "FK to INP_STORE, or blank for chain-level.",
+        "forecast_date": "Horizon date ISO YYYY-MM-DD.",
+        "expected_units": "Mean point forecast.",
+        "units_p10": "Downside estimate.",
+        "units_p90": "Upside estimate.",
+        "confidence": "0-1.",
+    },
+    "INP_ELASTICITY": {
+        "product_id": "FK to INP_PRODUCT.",
+        "elasticity": "d(ln q)/d(ln p); typically negative.",
+        "quality": "measured | modeled | prior.",
+        "confidence": "0-1.",
     },
 }
 

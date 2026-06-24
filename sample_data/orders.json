@@ -1,0 +1,11 @@
+[{"id":"ORD-1001","state":"locked","total_usd":56.96000000000000085,"created_at":"2026-06-15 05:14:20","item_name":"Basmati Rice 20lb","qty":1.0,"item_price":29.98999999999999844},
+{"id":"ORD-1001","state":"locked","total_usd":56.96000000000000085,"created_at":"2026-06-15 05:14:20","item_name":"Halal Lamb Shoulder (per lb)","qty":3.0,"item_price":8.990000000000000213},
+{"id":"ORD-1002","state":"locked","total_usd":12.47000000000000063,"created_at":"2026-06-17 05:14:20","item_name":"Fresh Naan Bread (pack of 4)","qty":2.0,"item_price":3.990000000000000213},
+{"id":"ORD-1002","state":"locked","total_usd":12.47000000000000063,"created_at":"2026-06-17 05:14:20","item_name":"Whole Milk Yogurt 32oz","qty":1.0,"item_price":4.490000000000000213},
+{"id":"ORD-1003","state":"locked","total_usd":12.99000000000000021,"created_at":"2026-06-19 05:14:20","item_name":"Saffron 1g","qty":1.0,"item_price":12.99000000000000021},
+{"id":"ORD-1004","state":"locked","total_usd":15.94999999999999929,"created_at":"2026-06-21 05:14:20","item_name":"Chickpeas Canned 15oz","qty":4.0,"item_price":1.989999999999999992},
+{"id":"ORD-1004","state":"locked","total_usd":15.94999999999999929,"created_at":"2026-06-21 05:14:20","item_name":"Pomegranate Molasses 12oz","qty":1.0,"item_price":7.990000000000000213},
+{"id":"ORD-1005","state":"locked","total_usd":16.96999999999999887,"created_at":"2026-06-22 05:14:20","item_name":"Halal Ground Beef (per lb)","qty":2.0,"item_price":6.990000000000000213},
+{"id":"ORD-1005","state":"locked","total_usd":16.96999999999999887,"created_at":"2026-06-22 05:14:20","item_name":"Fresh Spinach Bunch","qty":1.0,"item_price":2.990000000000000213},
+{"id":"ORD-1006","state":"open","total_usd":14.48000000000000042,"created_at":"2026-06-23 17:14:20","item_name":"Walnuts 1lb","qty":1.0,"item_price":8.990000000000000213},
+{"id":"ORD-1006","state":"open","total_usd":14.48000000000000042,"created_at":"2026-06-23 17:14:20","item_name":"Rosewater 16oz","qty":1.0,"item_price":5.490000000000000213}]

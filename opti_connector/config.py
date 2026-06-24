@@ -17,6 +17,7 @@ class OptiConfig:
     email: str | None
     password: str | None
     base_url: str | None
+    api_key: str | None = None
     sector: str = DEFAULT_SECTOR
     tenant_id: str | None = None
     db_path: str = DEFAULT_DB_PATH
@@ -25,7 +26,13 @@ class OptiConfig:
 
     @property
     def is_configured(self) -> bool:
-        return bool(self.email) and bool(self.password) and bool(self.base_url)
+        if not self.base_url:
+            return False
+        return bool(self.api_key) or (bool(self.email) and bool(self.password))
+
+    @property
+    def use_api_key(self) -> bool:
+        return bool(self.api_key)
 
 
 def _get(env: Mapping[str, str], key: str) -> str | None:
@@ -49,6 +56,7 @@ def load_config(env: Mapping[str, str] | None = None) -> OptiConfig:
     email = _get(merged, "OPTI_EMAIL")
     password = _get(merged, "OPTI_PASSWORD")
     base_url = _get(merged, "OPTI_BASE_URL")
+    api_key = _get(merged, "OPTI_API_KEY")
     sector = _get(merged, "OPTI_SECTOR") or DEFAULT_SECTOR
     tenant_id = _get(merged, "OPTI_TENANT_ID")
     db_path = _get(merged, "OPTI_DB_PATH") or DEFAULT_DB_PATH
@@ -57,6 +65,7 @@ def load_config(env: Mapping[str, str] | None = None) -> OptiConfig:
         email=email,
         password=password,
         base_url=base_url,
+        api_key=api_key,
         sector=sector,
         tenant_id=tenant_id,
         db_path=db_path,

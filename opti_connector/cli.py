@@ -72,13 +72,21 @@ def cmd_push(args: argparse.Namespace) -> int:
     os.close(fd)
     workbook.build_workbook(sheets, workbook_path)
 
+    mode = "full_overwrite" if args.full_overwrite else "incremental"
     client = _build_client(config)
+
     try:
-        client.login()
-        _resolve_tenant(client, config)
-        mode = "full_overwrite" if args.full_overwrite else "incremental"
-        job = client.upload_workbook(workbook_path, mode=mode)
-        result = client.poll_job(job["id"])
+        if config.use_api_key:
+            print("Using direct integration (API key)...")
+            result = client.push_direct(workbook_path, config.api_key, mode=mode)
+            job_id = result.get("id") or result.get("job_id")
+            if job_id:
+                result = client.poll_job(job_id)
+        else:
+            client.login()
+            _resolve_tenant(client, config)
+            job = client.upload_workbook(workbook_path, mode=mode)
+            result = client.poll_job(job["id"])
     except OptiAPIError as exc:
         print(f"Opti push failed: {exc}")
         return 1
@@ -100,6 +108,22 @@ def cmd_push(args: argparse.Namespace) -> int:
             print(f"  {err}")
 
     return 1 if result.get("status") == "FAILED" else 0
+
+
+def cmd_export(args: argparse.Namespace) -> int:
+    config = _with_db_path(load_config(), args.db_path)
+    if not os.path.exists(config.db_path):
+        print("No Clover data yet — run `clover-connector backfill` first.")
+        return 1
+
+    conn = clover_db.get_connection(config.db_path)
+    sheets = mapping.build_all_sheets(conn)
+    out = args.output or "opti_upload.xlsx"
+    workbook.build_workbook(sheets, out)
+    print(f"Workbook saved to {out}")
+    for sheet, rows in sheets.items():
+        print(f"  {sheet}: {len(rows)} rows")
+    return 0
 
 
 def cmd_rethink(args: argparse.Namespace) -> int:
@@ -223,6 +247,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="opti-connector")
     parser.add_argument("--db-path", default=None, help="Override the shared SQLite db path")
     sub = parser.add_subparsers(dest="command", required=True)
+
+    p_export = sub.add_parser("export", help="Save Clover data as an Excel workbook for manual upload")
+    p_export.add_argument("--output", "-o", default="opti_upload.xlsx", help="Output file path")
+    p_export.set_defaults(func=cmd_export)
 
     p_push = sub.add_parser("push", help="Map Clover data into Opti's INP_* workbook and upload it")
     p_push.add_argument("--full-overwrite", action="store_true")

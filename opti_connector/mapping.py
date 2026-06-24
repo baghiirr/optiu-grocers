@@ -199,4 +199,6 @@ def build_all_sheets(conn: sqlite3.Connection) -> dict[str, list[dict]]:
         "INP_SALES_HISTORY": build_sales_history_rows(conn),
         "INP_SHRINK_HISTORY": build_shrink_history_rows(conn),
         "INP_POLICY": build_policy_rows(),
+        "INP_DEMAND_FORECAST": [],
+        "INP_ELASTICITY": [],
     }
