@@ -3,19 +3,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from collections import defaultdict
-from datetime import date, datetime, timezone
-
-DEFAULT_POLICY_VALUES: dict[str, str] = {
-    "min_margin_pct": "0.18",
-    "target_service_level": "0.95",
-    "spoil_risk_days": "4",
-    "markdown_trigger_days": "4",
-    "max_markdown_depth_pct": "0.50",
-    "max_days_of_supply": "7.0",
-    "perishable_overbuy_guard": "true",
-    "allow_donation": "true",
-    "min_redistribute_units": "4",
-}
+from datetime import datetime, timezone
 
 
 def _get_merchant(conn: sqlite3.Connection) -> sqlite3.Row | None:
@@ -35,170 +23,188 @@ def _category_name(raw_json: str) -> str | None:
     return categories[0].get("name") if categories else None
 
 
+def _ms_to_iso(epoch_ms: int) -> str:
+    return datetime.fromtimestamp(epoch_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _ms_to_date(epoch_ms: int) -> str:
+    return datetime.fromtimestamp(epoch_ms / 1000, tz=timezone.utc).date().isoformat()
+
+
+def build_sku_rows(conn: sqlite3.Connection) -> list[dict]:
+    rows = []
+    for item in _active_items(conn):
+        rows.append(
+            {
+                "sku_id": item["id"],
+                "sku_name": item["name"],
+                "upc": item["code"],
+                "brand": None,
+                "category": _category_name(item["raw_json"]),
+                "subcategory": None,
+                "pack_size": None,
+                "case_qty": None,
+                "is_age_restricted": False,
+                "is_lottery": False,
+                "is_food": True,
+            }
+        )
+    return rows
+
+
+def build_supplier_rows(conn: sqlite3.Connection) -> list[dict]:
+    return []
+
+
+def build_vendor_term_rows(conn: sqlite3.Connection) -> list[dict]:
+    return []
+
+
+def build_inventory_snapshot_rows(conn: sqlite3.Connection) -> list[dict]:
+    merchant = _get_merchant(conn)
+    site_id = merchant["id"] if merchant else None
+    snapshot_at = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    price_by_item: dict[str, float | None] = {}
+    for item in _active_items(conn):
+        price_by_item[item["id"]] = item["price"] / 100.0 if item["price"] is not None else None
+
+    rows = []
+    for stock in conn.execute("SELECT * FROM item_stocks").fetchall():
+        if stock["item_id"] not in price_by_item:
+            continue
+        rows.append(
+            {
+                "site_id": site_id,
+                "sku_id": stock["item_id"],
+                "snapshot_at": snapshot_at,
+                "on_hand_units": stock["quantity"],
+                "shelf_price": price_by_item[stock["item_id"]],
+            }
+        )
+    return rows
+
+
+def build_invoice_rows(conn: sqlite3.Connection) -> list[dict]:
+    merchant = _get_merchant(conn)
+    site_id = merchant["id"] if merchant else None
+
+    rows = []
+    for order in conn.execute(
+        "SELECT id, total, created_time FROM orders WHERE state = 'locked'"
+    ).fetchall():
+        rows.append(
+            {
+                "invoice_id": order["id"],
+                "site_id": site_id,
+                "vendor_id": None,
+                "invoice_date": _ms_to_date(order["created_time"]),
+                "total_amount": order["total"] / 100.0 if order["total"] is not None else None,
+                "source_channel": "clover_pos",
+                "confidence_score": 1.0,
+                "received_at": _ms_to_iso(order["created_time"]),
+            }
+        )
+    return rows
+
+
+def build_invoice_line_rows(conn: sqlite3.Connection) -> list[dict]:
+    query = """
+        SELECT li.order_id, li.item_id, li.name, li.price, li.quantity
+        FROM line_items li
+        JOIN orders o ON o.id = li.order_id
+        WHERE o.state = 'locked'
+        ORDER BY li.order_id
+    """
+    line_nums: dict[str, int] = defaultdict(int)
+    rows = []
+    for row in conn.execute(query).fetchall():
+        line_nums[row["order_id"]] += 1
+        qty = (row["quantity"] or 0) / 1000.0
+        price_per_unit = (row["price"] or 0) / 100.0
+        rows.append(
+            {
+                "invoice_id": row["order_id"],
+                "line_num": line_nums[row["order_id"]],
+                "sku_id": row["item_id"],
+                "description": row["name"],
+                "units": qty,
+                "case_cost": price_per_unit,
+                "line_total": round(price_per_unit * qty, 4),
+                "confidence_score": 1.0,
+            }
+        )
+    return rows
+
+
 def build_store_rows(conn: sqlite3.Connection) -> list[dict]:
     merchant = _get_merchant(conn)
     if merchant is None:
         return []
     return [
         {
-            "store_id": merchant["id"],
-            "store_name": merchant["name"],
+            "site_id": merchant["id"],
+            "site_name": merchant["name"],
+            "street_address": None,
+            "phone": None,
+            "city": None,
+            "state": None,
+            "zip": None,
             "format": None,
-            "region": None,
-            "selling_area_sqft": None,
-            "weekly_footfall": None,
-            "currency": merchant["currency"] or "USD",
+            "pump_count": 0,
+            "store_sqft": None,
+            "has_carwash": False,
+            "has_food_program": True,
+            "has_lottery": False,
+            "has_alcohol": False,
+            "open_24h": False,
+            "open_date": None,
+            "is_active": True,
+            "timezone": merchant["timezone"],
+            "latitude": None,
+            "longitude": None,
         }
     ]
 
 
-def build_product_rows(conn: sqlite3.Connection) -> list[dict]:
-    rows = []
-    for item in _active_items(conn):
-        rows.append(
-            {
-                "product_id": item["id"],
-                "product_name": item["name"],
-                "department": _category_name(item["raw_json"]),
-                "subcategory": None,
-                "is_perishable": None,
-                "shelf_life_days": None,
-                "temp_zone": None,
-                "unit_cost": item["cost"] / 100.0 if item["cost"] is not None else None,
-                "list_price": item["price"] / 100.0 if item["price"] is not None else None,
-                "unit_of_measure": "ea",
-                "default_vendor_id": None,
-            }
-        )
-    return rows
-
-
-def build_inventory_rows(conn: sqlite3.Connection) -> list[dict]:
+def build_employee_rows(conn: sqlite3.Connection) -> list[dict]:
     merchant = _get_merchant(conn)
-    store_id = merchant["id"] if merchant else None
-    active_ids = {item["id"] for item in _active_items(conn)}
-    today = date.today().isoformat()
+    site_id = merchant["id"] if merchant else None
 
     rows = []
-    for stock in conn.execute("SELECT * FROM item_stocks").fetchall():
-        if stock["item_id"] not in active_ids:
-            continue
+    for emp in conn.execute("SELECT id, name, raw_json FROM employees").fetchall():
+        try:
+            raw = json.loads(emp["raw_json"])
+        except (TypeError, ValueError):
+            raw = {}
+        role = raw.get("role")
         rows.append(
             {
-                "product_id": stock["item_id"],
-                "store_id": store_id,
-                "on_hand_units": stock["quantity"],
-                "on_order_units": None,
-                "received_date": None,
-                "age_days": None,
-                "days_of_supply": None,
-                "as_of_date": today,
+                "employee_id": emp["id"],
+                "full_name": emp["name"],
+                "site_id": site_id,
+                "role": role,
+                "hourly_rate": None,
+                "hired_on": None,
+                "is_active": True,
             }
         )
     return rows
 
 
-def build_price_rows(conn: sqlite3.Connection) -> list[dict]:
-    merchant = _get_merchant(conn)
-    store_id = merchant["id"] if merchant else None
-    currency = (merchant["currency"] if merchant else None) or "USD"
-
-    rows = []
-    for item in _active_items(conn):
-        rows.append(
-            {
-                "product_id": item["id"],
-                "store_id": store_id,
-                "current_price": item["price"] / 100.0 if item["price"] is not None else None,
-                "floor_price": item["cost"] / 100.0 if item["cost"] is not None else None,
-                "ceiling_price": None,
-                "currency": currency,
-            }
-        )
-    return rows
-
-
-def build_sales_history_rows(conn: sqlite3.Connection) -> list[dict]:
-    merchant = _get_merchant(conn)
-    store_id = merchant["id"] if merchant else None
-
-    query = """
-        SELECT li.item_id AS item_id, li.price AS price, li.quantity AS quantity, o.created_time AS created_time
-        FROM line_items li
-        JOIN orders o ON o.id = li.order_id
-        WHERE o.state = 'locked' AND li.item_id IS NOT NULL
-    """
-    groups: dict[tuple[str, str], dict] = defaultdict(lambda: {"units": 0.0, "revenue": 0.0})
-    for row in conn.execute(query).fetchall():
-        sale_date = (
-            datetime.fromtimestamp(row["created_time"] / 1000, tz=timezone.utc).date().isoformat()
-        )
-        key = (row["item_id"], sale_date)
-        units = (row["quantity"] or 0) / 1000.0
-        groups[key]["units"] += units
-        groups[key]["revenue"] += (row["price"] or 0) * units / 100.0
-
-    rows = []
-    for (item_id, sale_date), agg in groups.items():
-        units_sold = agg["units"]
-        revenue = agg["revenue"]
-        rows.append(
-            {
-                "product_id": item_id,
-                "store_id": store_id,
-                "sale_date": sale_date,
-                "units_sold": units_sold,
-                "revenue": revenue,
-                "avg_price": (revenue / units_sold) if units_sold > 0 else None,
-                "on_markdown": False,
-            }
-        )
-    return rows
-
-
-def build_policy_rows() -> list[dict]:
-    return [
-        {
-            "policy_key": key,
-            "policy_value": value,
-            "scope": "global",
-            "department": None,
-            "description": f"v1 engineering default for {key} — confirm with the business.",
-        }
-        for key, value in DEFAULT_POLICY_VALUES.items()
-    ]
-
-
-def build_vendor_rows(conn: sqlite3.Connection) -> list[dict]:
-    """INP_VENDOR — Clover has no native vendor/PO model (spec §5.1). Returns
-    [] in v1. Pending: supervisor to provide vendor master data before this
-    can be implemented."""
-    return []
-
-
-def build_vendor_product_rows(conn: sqlite3.Connection) -> list[dict]:
-    """INP_VENDOR_PRODUCT — same gap as build_vendor_rows. Returns []."""
-    return []
-
-
-def build_shrink_history_rows(conn: sqlite3.Connection) -> list[dict]:
-    """INP_SHRINK_HISTORY — clover_connector doesn't currently sync Clover's
-    inventory-adjustment resource. Returns []. Pending: either add that sync
-    or a shrink log from the business."""
+def build_labor_rule_rows() -> list[dict]:
     return []
 
 
 def build_all_sheets(conn: sqlite3.Connection) -> dict[str, list[dict]]:
     return {
-        "INP_STORE": build_store_rows(conn),
-        "INP_PRODUCT": build_product_rows(conn),
-        "INP_VENDOR": build_vendor_rows(conn),
-        "INP_VENDOR_PRODUCT": build_vendor_product_rows(conn),
-        "INP_INVENTORY": build_inventory_rows(conn),
-        "INP_PRICE": build_price_rows(conn),
-        "INP_SALES_HISTORY": build_sales_history_rows(conn),
-        "INP_SHRINK_HISTORY": build_shrink_history_rows(conn),
-        "INP_POLICY": build_policy_rows(),
-        "INP_DEMAND_FORECAST": [],
-        "INP_ELASTICITY": [],
+        "SKUs": build_sku_rows(conn),
+        "Suppliers": build_supplier_rows(conn),
+        "Vendor terms": build_vendor_term_rows(conn),
+        "Inventory snapshots": build_inventory_snapshot_rows(conn),
+        "Invoices": build_invoice_rows(conn),
+        "Invoice lines": build_invoice_line_rows(conn),
+        "Stores": build_store_rows(conn),
+        "Employees": build_employee_rows(conn),
+        "Labor rules": build_labor_rule_rows(),
     }

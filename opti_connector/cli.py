@@ -118,7 +118,7 @@ def cmd_export(args: argparse.Namespace) -> int:
 
     conn = clover_db.get_connection(config.db_path)
     sheets = mapping.build_all_sheets(conn)
-    out = args.output or "opti_upload.xlsx"
+    out = args.output or "opti_catalog.xlsx"
     workbook.build_workbook(sheets, out)
     print(f"Workbook saved to {out}")
     for sheet, rows in sheets.items():
@@ -249,10 +249,10 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_export = sub.add_parser("export", help="Save Clover data as an Excel workbook for manual upload")
-    p_export.add_argument("--output", "-o", default="opti_upload.xlsx", help="Output file path")
+    p_export.add_argument("--output", "-o", default="opti_catalog.xlsx", help="Output file path")
     p_export.set_defaults(func=cmd_export)
 
-    p_push = sub.add_parser("push", help="Map Clover data into Opti's INP_* workbook and upload it")
+    p_push = sub.add_parser("push", help="Map Clover data into the Opti catalog workbook and upload it")
     p_push.add_argument("--full-overwrite", action="store_true")
     p_push.set_defaults(func=cmd_push)
 
